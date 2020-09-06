@@ -22,7 +22,7 @@ def home():
 # Token PAGE
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/token')
-def home():
+def token():
     return {'message': 'Token Page'}
 
 
