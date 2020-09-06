@@ -29,8 +29,6 @@ from datetime import datetime
 app=Flask(__name__,template_folder='templates')
 cors = CORS(app)
 
-# Numero Random
-import random2
 
 # Email 
 import smtplib
