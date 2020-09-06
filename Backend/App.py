@@ -4,13 +4,8 @@ import pymysql
 # ENCRIPTAR VARIABLES
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# DB Settings
-Conexion = [
-    "", # Server
-    "", # User
-    "", # Pass
-    "", # DB
-]
+from settings import Conexion, server
+Conexion = Conexion
  
 #MAIN 
 app = Flask(__name__)
@@ -44,6 +39,35 @@ def obtener_user():
         query = "SELECT * FROM usuario"
         cursor.execute(query)
         resultados = cursor.fetchall()
+        connection.commit()
+        #JSON DE RESPUESTA
+        response = jsonify({
+                        'resultados': resultados,
+                        'mensaje': 'Datos de usuarios'
+                        })
+    return response
+
+
+#////////////////////////////////////////////////////////////////////////////////   
+# METODO GETbyID
+#////////////////////////////////////////////////////////////////////////////////  
+@app.route('/users/<userid>', methods=['GET'])
+def obtener_userById(userid):
+
+
+    # Connect to the database
+    connection = pymysql.connect(host=Conexion[0],
+                        user=Conexion[1],
+                        password=Conexion[2],
+                        db=Conexion[3],
+                        charset='utf8mb4',
+                        cursorclass=pymysql.cursors.DictCursor)
+
+    with connection.cursor() as cursor:
+        #SENTENCIA SQL
+        query = "SELECT * FROM usuario where Id = %s"
+        cursor.execute(query, userid)
+        resultados = cursor.fetchone()
         connection.commit()
         #JSON DE RESPUESTA
         response = jsonify({
