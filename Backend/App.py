@@ -4,11 +4,21 @@ import pymysql
 # ENCRIPTAR VARIABLES
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from flask import Flask, jsonify, request
+from flask_jwt_extended import (
+    JWTManager, jwt_required, create_access_token,
+    get_jwt_identity
+)
+
 from settings import Conexion, server
 Conexion = Conexion
  
 #MAIN 
 app = Flask(__name__)
+
+# Setup the Flask-JWT-Extended extension
+app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this!
+jwt = JWTManager(app)
 
 
 #////////////////////////////////////////////////////////////////////////////////   
@@ -21,15 +31,16 @@ def home():
     #////////////////////////////////////////////////////////////////////////////////   
 # Token PAGE
 #////////////////////////////////////////////////////////////////////////////////  
-@app.route('/token')
-def token():
-    return {'message': 'Token Page'}
+@app.route('/token', methods=['GET'])
+def obtener_token():
 
-
+    return "token page"
+ 
 #////////////////////////////////////////////////////////////////////////////////   
 # METODO GET
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/users', methods=['GET'])
+@jwt_required
 def obtener_user():
 
 
@@ -40,6 +51,10 @@ def obtener_user():
                         db=Conexion[3],
                         charset='utf8mb4',
                         cursorclass=pymysql.cursors.DictCursor)
+
+    user = get_jwt_identity()
+    print(user)
+    
 
     with connection.cursor() as cursor:
         #SENTENCIA SQL
@@ -52,6 +67,7 @@ def obtener_user():
                         'resultados': resultados,
                         'mensaje': 'Datos de usuarios'
                         })
+
     return response
 
 
@@ -59,6 +75,7 @@ def obtener_user():
 # METODO GETbyID
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/users/<userid>', methods=['GET'])
+@jwt_required
 def obtener_userById(userid):
 
 
@@ -69,6 +86,10 @@ def obtener_userById(userid):
                         db=Conexion[3],
                         charset='utf8mb4',
                         cursorclass=pymysql.cursors.DictCursor)
+
+    user = get_jwt_identity()
+    print(user)
+    
 
     with connection.cursor() as cursor:
         #SENTENCIA SQL
@@ -86,7 +107,7 @@ def obtener_userById(userid):
 #////////////////////////////////////////////////////////////////////////////////   
 # METODO POST
 #////////////////////////////////////////////////////////////////////////////////  
-@app.route('/users', methods=['POST'])
+@app.route('/create_users', methods=['POST'])
 def crear_user():
 
     # Connect to the database
@@ -101,13 +122,14 @@ def crear_user():
     print("Funcion de crear usuario")
 
     
-
     username = request.json['username']
     password = request.json['password']
     email = request.json['email']
     
+
     print(username, password, email)
-        
+
+
     if username and email and password:
 
         hashed_password = generate_password_hash(password)
@@ -118,12 +140,14 @@ def crear_user():
             cursor.execute(sql, (username, hashed_password, email))
             connection.commit()
 
-        return {'message': 'Usuario creado con exito', 'username': username,'password': hashed_password, 'email': email}
+        access_token = create_access_token(identity={"email": email})
+        return {"Your Token is": access_token}
+
+        #return {'message': 'Usuario creado con exito', 'username': username,'password': hashed_password, 'email': email}
         
     else:
         return not_found()
-        print(username)
-        return {'error': 'Fallo la operacion, no se puedo crear usuario'}
+        
 
 
 # MANEJO DE ERRORES
@@ -139,7 +163,8 @@ def not_found(error=None):
 #////////////////////////////////////////////////////////////////////////////////   
 # METODO DELETE
 #////////////////////////////////////////////////////////////////////////////////  
-@app.route('/users/<userid>', methods=['DELETE'])
+@app.route('/delete_users/<userid>', methods=['DELETE'])
+@jwt_required
 def borrar_user(userid):
 
 
@@ -149,6 +174,9 @@ def borrar_user(userid):
                         db=Conexion[3],
                         charset='utf8mb4',
                         cursorclass=pymysql.cursors.DictCursor)
+
+    user = get_jwt_identity()
+    print(user)
 
     with connection.cursor() as cursor:
 
