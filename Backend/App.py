@@ -27,16 +27,9 @@ jwt = JWTManager(app)
 @app.route('/')
 def home():
     return {'message': 'Home Page'}
-    
-    #////////////////////////////////////////////////////////////////////////////////   
-# Token PAGE
-#////////////////////////////////////////////////////////////////////////////////  
-@app.route('/token', methods=['GET'])
-def obtener_token():
-
-    return "token page"
- 
-#////////////////////////////////////////////////////////////////////////////////   
+     
+#//////////////////////////////////////////////////////////////////////////////// 
+# Web Services "USERS"  
 # METODO GET
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/users', methods=['GET'])
@@ -70,9 +63,9 @@ def obtener_user():
 
     return response
 
-
-#////////////////////////////////////////////////////////////////////////////////   
-# METODO GETbyID
+#////////////////////////////////////////////////////////////////////////////////  
+# Web Services "USERS"   
+# METODO GET by ID
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/users/<userid>', methods=['GET'])
 @jwt_required
@@ -105,6 +98,7 @@ def obtener_userById(userid):
     return response
         
 #////////////////////////////////////////////////////////////////////////////////   
+# Web Services "USERS"  
 # METODO POST
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/create_users', methods=['POST'])
@@ -147,47 +141,9 @@ def crear_user():
         
     else:
         return not_found()
-        
-
-
-# MANEJO DE ERRORES
-@app.errorhandler(404)
-def not_found(error=None):
-    response = jsonify({
-        'message': 'Pagina no encontrada ' + request.url,
-        'status': 404
-    })
-    response.status_code = 404
-    return response
-        
+     
 #////////////////////////////////////////////////////////////////////////////////   
-# METODO DELETE
-#////////////////////////////////////////////////////////////////////////////////  
-@app.route('/delete_users/<userid>', methods=['DELETE'])
-@jwt_required
-def borrar_user(userid):
-
-
-    connection = pymysql.connect(host=Conexion[0],
-                        user=Conexion[1],
-                        password=Conexion[2],
-                        db=Conexion[3],
-                        charset='utf8mb4',
-                        cursorclass=pymysql.cursors.DictCursor)
-
-    user = get_jwt_identity()
-    print(user)
-
-    with connection.cursor() as cursor:
-
-                # Delete data User
-        sql = "DELETE FROM `usuario` WHERE Id = %s"
-        cursor.execute(sql, userid)
-        connection.commit()
-
-    return {'message': 'Usuario eliminado'}
-
-#////////////////////////////////////////////////////////////////////////////////   
+# Web Services "USERS"  
 # METODO PUT
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/users/<userid>', methods=['PUT'])
@@ -218,6 +174,60 @@ def actualizar_user(userid):
 
 
     return response
+
+#////////////////////////////////////////////////////////////////////////////////   
+# Web Services "USERS"  
+# METODO DELETE
+#////////////////////////////////////////////////////////////////////////////////  
+@app.route('/delete_users/<userid>', methods=['DELETE'])
+@jwt_required
+def borrar_user(userid):
+
+
+    connection = pymysql.connect(host=Conexion[0],
+                        user=Conexion[1],
+                        password=Conexion[2],
+                        db=Conexion[3],
+                        charset='utf8mb4',
+                        cursorclass=pymysql.cursors.DictCursor)
+
+    user = get_jwt_identity()
+    print(user)
+
+    with connection.cursor() as cursor:
+
+                # Delete data User
+        sql = "DELETE FROM `usuario` WHERE Id = %s"
+        cursor.execute(sql, userid)
+        connection.commit()
+
+    return {'message': 'Usuario eliminado'}
+
+#////////////////////////////////////////////////////////////////////////////////   
+# Web Services "TOKEN"  
+# Generar Token 
+#////////////////////////////////////////////////////////////////////////////////  
+@app.route('/token', methods=['POST'])
+def obtener_token():
+
+    #Key = request.json['Key']
+    email = request.json['email']
+
+    access_token = create_access_token(identity={"email": email})
+    return {"Token": access_token}
+
+#//////////////////////////////////////////////////////////////////////////////// 
+# MANEJO DE ERRORES
+#//////////////////////////////////////////////////////////////////////////////// 
+@app.errorhandler(404)
+def not_found(error=None):
+    response = jsonify({
+        'message': 'Pagina no encontrada ' + request.url,
+        'status': 404
+    })
+    response.status_code = 404
+    return response
+
 
 
 if __name__ == "__main__":
