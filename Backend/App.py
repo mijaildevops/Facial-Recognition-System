@@ -10,6 +10,9 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 
+# Guid aletoreo
+import uuid
+
 from settings import Conexion, server
 Conexion = Conexion
  
@@ -101,7 +104,7 @@ def obtener_userById(userid):
 # Web Services "USERS"  
 # METODO POST
 #////////////////////////////////////////////////////////////////////////////////  
-@app.route('/create_users', methods=['POST'])
+@app.route('/users', methods=['POST'])
 def crear_user():
 
     # Connect to the database
@@ -128,16 +131,16 @@ def crear_user():
 
         hashed_password = generate_password_hash(password)
 
+        # Generar Guid o APIKey aleatoreo
+        ApiKey = str(uuid.uuid4())
+
         with connection.cursor() as cursor:
             # Si el Usuario no existe en la DB, procede a Crear el registro 
-            sql = "INSERT INTO `usuario` (username, password, email) Values (%s,%s,%s)"
-            cursor.execute(sql, (username, hashed_password, email))
+            sql = "INSERT INTO `usuario` (username, password, email, ApiKey) Values (%s, %s,%s,%s)"
+            cursor.execute(sql, (username, hashed_password, email, ApiKey))
             connection.commit()
 
-        access_token = create_access_token(identity={"email": email})
-        return {"Your Token is": access_token}
-
-        #return {'message': 'Usuario creado con exito', 'username': username,'password': hashed_password, 'email': email}
+        return {'message': 'Usuario creado con exito', 'username': username,'password': hashed_password, 'email': email, 'ApiKey': ApiKey}
         
     else:
         return not_found()
@@ -209,12 +212,48 @@ def borrar_user(userid):
 #////////////////////////////////////////////////////////////////////////////////  
 @app.route('/token', methods=['POST'])
 def obtener_token():
-
-    #Key = request.json['Key']
+    
+    # valores recibidos en la request
+    ApiKey = request.json['ApiKey']
     email = request.json['email']
 
-    access_token = create_access_token(identity={"email": email})
-    return {"Token": access_token}
+    # Inicializar variable
+    EmailDB = None
+    KeyDB = None
+
+     # Connect to the database
+    connection = pymysql.connect(host=Conexion[0],
+                        user=Conexion[1],
+                        password=Conexion[2],
+                        db=Conexion[3],
+                        charset='utf8mb4',
+                        cursorclass=pymysql.cursors.DictCursor)
+
+  
+    with connection.cursor() as cursor:
+        #SENTENCIA SQL
+        query = "SELECT email, ApiKey FROM usuario where email = %s"
+        cursor.execute(query, email)
+        resultados = cursor.fetchone()
+        connection.commit()
+        
+        try:
+            # Verificamos si el email existe
+            EmailDB = resultados["email"]
+            KeyDB = resultados["ApiKey"]
+        except:
+            print('User not found in db')
+
+        # comparamos los datos recidos contra los datos de la DB (deben ser iguales)
+        if (email == EmailDB and ApiKey==KeyDB):
+            # Generamos el Token
+            access_token = create_access_token(identity={"email": email})
+            return {"Token": access_token}
+        else:
+            # Respuesta si la validacion es incorrecta
+            return {"Error": "Token No Generado, Datos Invalidos"}
+
+    
 
 #//////////////////////////////////////////////////////////////////////////////// 
 # MANEJO DE ERRORES
